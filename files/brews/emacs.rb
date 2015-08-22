@@ -57,7 +57,7 @@ class Emacs < Formula
   end
 
   depends_on 'pkg-config' => :build
-#depends_on :x11 if build.with? "x"
+  #depends_on :x11 if build.with? "x"
   depends_on 'gnutls' => :optional
 
   fails_with :llvm do
@@ -65,75 +65,17 @@ class Emacs < Formula
     cause "Duplicate symbol errors while linking."
   end
 
-  # Follow MacPorts and don't install ctags from Emacs. This allows Vim
-  # and Emacs and ctags to play together without violence.
-  def do_not_install_ctags
-    unless build.include? "keep-ctags"
-      (bin/"ctags").unlink
-      (share/man/man1/"ctags.1.gz").unlink
-    end
-  end
 
   def install
       
-      args = ["--prefix=#{prefix}",
-      "--without-dbus",
-      "--enable-locallisppath=#{HOMEBREW_PREFIX}/share/emacs/site-lisp",
-      "--infodir=#{info}/emacs"]
-      
-      args << '--with-ns'
-      
-      system "./autogen.sh" if build.head?
-      
-      
-      args << "--without-x"
+      args = ["--with-ns"]
       
       system "./configure", *args
       system "make"
       system "make install"
       
-      # Don't cause ctags clash.
-      do_not_install_ctags
-      
   end
 
-  def caveats
-    s = ""
-    if build.include? "cocoa"
-      s += <<-EOS.undent
-        A command line wrapper for the cocoa app was installed to:
-         #{bin}/emacs
-      EOS
-      if build.include? "srgb" and build.head?
-        s << "\nTo enable sRGB, use (setq ns-use-srgb-colorspace t)"
-      end
-    end
-    return s
-  end
-
-  test do
-    output = `'#{bin}/emacs' --batch --eval="(print (+ 2 2))"`
-    assert $?.success?
-    assert_equal "4", output.strip
-  end
 end
 
 __END__
---- src/emacs.c.orig	2013-02-06 13:33:36.000000000 +0900
-+++ src/emacs.c	2013-11-02 22:38:45.000000000 +0900
-@@ -1158,10 +1158,13 @@
-   if (!noninteractive)
-     {
- #ifdef NS_IMPL_COCOA
-+      /* Started from GUI? */
-+      /* FIXME: Do the right thing if getenv returns NULL, or if
-+         chdir fails.  */
-+      if (! inhibit_window_system && ! isatty (0))
-+        chdir (getenv ("HOME"));
-       if (skip_args < argc)
-         {
--	  /* FIXME: Do the right thing if getenv returns NULL, or if
--	     chdir fails.  */
-           if (!strncmp (argv[skip_args], "-psn", 4))
-             {
-               skip_args += 1;
