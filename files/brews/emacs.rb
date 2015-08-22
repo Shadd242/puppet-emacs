@@ -12,16 +12,12 @@ class Emacs < Formula
 #option "cocoa", "Build a Cocoa version of emacs"
 # option "srgb", "Enable sRGB colors in the Cocoa version of emacs"
 # option "with-x", "Include X11 support"
-# option "use-git-head", "Use Savannah (faster) git mirror for HEAD builds"
+  option "use-git-head", "Use Savannah (faster) git mirror for HEAD builds"
   option "keep-ctags", "Don't remove the ctags executable that emacs provides"
 # option "japanese", "Patch for Japanese input methods"
 
   head do
-    if build.include? "use-git-head"
-      url 'http://git.sv.gnu.org/r/emacs.git'
-    else
-      url 'bzr://http://bzr.savannah.gnu.org/r/emacs/trunk'
-    end
+    url 'http://git.savannah.gnu.org/r/emacs.git/'
 
     depends_on :autoconf
     depends_on :automake
@@ -32,11 +28,7 @@ class Emacs < Formula
       #depends_on :autoconf
       #depends_on :automake
       #end
-      if build.include? "use-git-head"
-          url 'http://git.sv.gnu.org/r/emacs.git'
-          else
-          url 'bzr://http://bzr.savannah.gnu.org/r/emacs/trunk'
-      end
+      url 'http://git.savannah.gnu.org/r/emacs.git/'
       
       depends_on :autoconf
       depends_on :automake
@@ -83,32 +75,26 @@ class Emacs < Formula
   end
 
   def install
-    # HEAD builds blow up when built in parallel as of April 20 2012
-    ENV.j1 if build.head?
-
-    args = ["--prefix=#{prefix}",
-            "--without-dbus",
-            "--enable-locallisppath=#{HOMEBREW_PREFIX}/share/emacs/site-lisp",
-            "--infodir=#{info}/emacs"]
-    if build.with? 'gnutls'
-      args << '--with-gnutls'
-    else
-      args << '--without-gnutls'
-    end
-
-    system "./autogen.sh" if build.head?
-
-
-    args << "--without-x"
-
-    system "./configure", *args
-    system "make"
-    system "make install"
-
-    # Don't cause ctags clash.
-    do_not_install_ctags
-
-
+      
+      args = ["--prefix=#{prefix}",
+      "--without-dbus",
+      "--enable-locallisppath=#{HOMEBREW_PREFIX}/share/emacs/site-lisp",
+      "--infodir=#{info}/emacs"]
+      
+      args << '--with-ns'
+      
+      system "./autogen.sh" if build.head?
+      
+      
+      args << "--without-x"
+      
+      system "./configure", *args
+      system "make"
+      system "make install"
+      
+      # Don't cause ctags clash.
+      do_not_install_ctags
+      
   end
 
   def caveats
