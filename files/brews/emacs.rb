@@ -2,10 +2,10 @@ require 'formula'
 
 class Emacs < Formula
   homepage 'http://www.gnu.org/software/emacs/'
-  url 'http://ftpmirror.gnu.org/emacs/emacs-24.3.tar.gz'
-  mirror 'http://ftp.gnu.org/pub/gnu/emacs/emacs-24.3.tar.gz'
+  url 'http://ftpmirror.gnu.org/emacs/emacs-24.4.tar.gz'
+  mirror 'http://ftp.gnu.org/pub/gnu/emacs/emacs-24.4.tar.gz'
   sha256 '0098ca3204813d69cd8412045ba33e8701fa2062f4bff56bedafc064979eef41'
-  version '24.3-boxen4'
+  version '24.4-boxen5'
 
   skip_clean 'share/info' # Keep the docs
 
