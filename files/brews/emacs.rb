@@ -4,7 +4,7 @@ class Emacs < Formula
   homepage 'http://www.gnu.org/software/emacs/'
   url 'http://ftpmirror.gnu.org/emacs/emacs-24.4.tar.gz'
   mirror 'http://ftp.gnu.org/pub/gnu/emacs/emacs-24.4.tar.gz'
-  sha256 'a93c4f1afa5ade65a0c9723975f0a5fdf6641cc4638fdafb3ed9942c23c32cc6'
+  sha256 '257a7557a89b9e290ab9eef468c68ef62ed5bd30f350ea028a9a6ac3208be00d'
   version '24.4-boxen5'
 
   skip_clean 'share/info' # Keep the docs
