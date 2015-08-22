@@ -9,12 +9,12 @@ class Emacs < Formula
 
   skip_clean 'share/info' # Keep the docs
 
-#option "cocoa", "Build a Cocoa version of emacs"
-# option "srgb", "Enable sRGB colors in the Cocoa version of emacs"
-# option "with-x", "Include X11 support"
-# option "use-git-head", "Use Savannah (faster) git mirror for HEAD builds"
+  option "cocoa", "Build a Cocoa version of emacs"
+  option "srgb", "Enable sRGB colors in the Cocoa version of emacs"
+  option "with-x", "Include X11 support"
+  option "use-git-head", "Use Savannah (faster) git mirror for HEAD builds"
   option "keep-ctags", "Don't remove the ctags executable that emacs provides"
-# option "japanese", "Patch for Japanese input methods"
+  option "japanese", "Patch for Japanese input methods"
 
   head do
     if build.include? "use-git-head"
@@ -28,44 +28,37 @@ class Emacs < Formula
   end
 
   stable do
-      #if build.include? "cocoa"
-      #depends_on :autoconf
-      #depends_on :automake
-      #end
-      if build.include? "use-git-head"
-          url 'http://git.sv.gnu.org/r/emacs.git'
-          else
-          url 'bzr://http://bzr.savannah.gnu.org/r/emacs/trunk'
-      end
-      
+    if build.include? "cocoa"
       depends_on :autoconf
       depends_on :automake
+    end
+
     # Fix default-directory on Cocoa and Mavericks.
     # Fixed upstream in r114730 and r114882.
-    #patch :p0, :DATA
+    patch :p0, :DATA
 
     # Make native fullscreen mode optional, mostly from upstream r111679
-    #patch do
-        #url "https://gist.github.com/scotchi/7209145/raw/a571acda1c85e13ed8fe8ab7429dcb6cab52344f/ns-use-native-fullscreen-and-toggle-frame-fullscreen.patch"
-        #sha1 "cb4cc4940efa1a43a5d36ec7b989b90834b7442b"
-        #end
+    patch do
+      url "https://gist.github.com/scotchi/7209145/raw/a571acda1c85e13ed8fe8ab7429dcb6cab52344f/ns-use-native-fullscreen-and-toggle-frame-fullscreen.patch"
+      sha1 "cb4cc4940efa1a43a5d36ec7b989b90834b7442b"
+    end
 
     # Fix memory leaks in NS version from upstream r114945
-    #patch do
-    #url "https://gist.github.com/anonymous/8553178/raw/c0ddb67b6e92da35a815d3465c633e036df1a105/emacs.memory.leak.aka.distnoted.patch.diff"
-    #sha1 "173ce253e0d8920e0aa7b1464d5635f6902c98e7"
-    #end
+    patch do
+      url "https://gist.github.com/anonymous/8553178/raw/c0ddb67b6e92da35a815d3465c633e036df1a105/emacs.memory.leak.aka.distnoted.patch.diff"
+      sha1 "173ce253e0d8920e0aa7b1464d5635f6902c98e7"
+    end
 
     # "--japanese" option:
     # to apply a patch from MacEmacsJP for Japanese input methods
-    #patch :p0 do
-    #url "http://sourceforge.jp/projects/macemacsjp/svn/view/inline_patch/trunk/emacs-inline.patch?view=co&revision=583&root=macemacsjp&pathrev=583"
-    #sha1 "61a6f41f3ddc9ecc3d7f57379b3dc195d7b9b5e2"
-    #end if build.include? "cocoa" and build.include? "japanese"
+    patch :p0 do
+      url "http://sourceforge.jp/projects/macemacsjp/svn/view/inline_patch/trunk/emacs-inline.patch?view=co&revision=583&root=macemacsjp&pathrev=583"
+      sha1 "61a6f41f3ddc9ecc3d7f57379b3dc195d7b9b5e2"
+    end if build.include? "cocoa" and build.include? "japanese"
   end
 
   depends_on 'pkg-config' => :build
-#depends_on :x11 if build.with? "x"
+  depends_on :x11 if build.with? "x"
   depends_on 'gnutls' => :optional
 
   fails_with :llvm do
@@ -98,17 +91,49 @@ class Emacs < Formula
 
     system "./autogen.sh" if build.head?
 
+    if build.include? "cocoa"
+      # Patch for color issues described here:
+      # http://debbugs.gnu.org/cgi/bugreport.cgi?bug=8402
+      if build.include? "srgb" and not build.head?
+        inreplace "src/nsterm.m",
+          "*col = [NSColor colorWithCalibratedRed: r green: g blue: b alpha: 1.0];",
+          "*col = [NSColor colorWithDeviceRed: r green: g blue: b alpha: 1.0];"
+      end
 
-    args << "--without-x"
+      args << "--with-ns" << "--disable-ns-self-contained"
+      system "./configure", *args
+      system "make"
+      system "make install"
+      prefix.install "nextstep/Emacs.app"
 
-    system "./configure", *args
-    system "make"
-    system "make install"
+      # Don't cause ctags clash.
+      do_not_install_ctags
 
-    # Don't cause ctags clash.
-    do_not_install_ctags
+      # Replace the symlink with one that avoids starting Cocoa.
+      (bin/"emacs").unlink # Kill the existing symlink
+      (bin/"emacs").write <<-EOS.undent
+        #!/bin/bash
+        #{prefix}/Emacs.app/Contents/MacOS/Emacs -nw  "$@"
+      EOS
+    else
+      if build.with? "x"
+        # These libs are not specified in xft's .pc. See:
+        # https://trac.macports.org/browser/trunk/dports/editors/emacs/Portfile#L74
+        # https://github.com/Homebrew/homebrew/issues/8156
+        ENV.append 'LDFLAGS', '-lfreetype -lfontconfig'
+        args << "--with-x"
+        args << "--with-gif=no" << "--with-tiff=no" << "--with-jpeg=no"
+      else
+        args << "--without-x"
+      end
 
+      system "./configure", *args
+      system "make"
+      system "make install"
 
+      # Don't cause ctags clash.
+      do_not_install_ctags
+    end
   end
 
   def caveats
